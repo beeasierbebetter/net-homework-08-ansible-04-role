@@ -1,0 +1,6 @@
+
+.venv/
+.ansible/
+.cache/
+roles/
+*.retry

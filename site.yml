@@ -1,0 +1,57 @@
+---
+- name: Install ClickHouse
+  hosts: clickhouse
+  become: true
+  pre_tasks:
+    - name: Install ClickHouse prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - gnupg
+          - dirmngr
+          - python3-apt
+        state: present
+        update_cache: true
+  roles:
+    - role: clickhouse
+
+- name: Install Vector
+  hosts: vector
+  become: true
+  roles:
+    - role: vector
+
+- name: Deploy LightHouse
+  hosts: lighthouse
+  become: true
+  pre_tasks:
+    - name: Install LightHouse prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - git
+          - nginx
+        state: present
+        update_cache: true
+  roles:
+    - role: lighthouse
+  tasks:
+    - name: Configure Nginx for LightHouse
+      ansible.builtin.template:
+        src: lighthouse.conf.j2
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload Nginx
+
+    - name: Enable and start Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+  handlers:
+    - name: Reload Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
